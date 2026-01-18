@@ -25,7 +25,11 @@ At each step, the agent updates its belief state based on observed feedback and 
 
 An exact entropy-minimising policy is implemented as a reference method.
 
-Given a belief state, this method evaluates all candidate guesses, computes the expected posterior entropy induced by each possible feedback pattern, and selects the guess that minimises this expected entropy.
+Given a belief state, this method evaluates all candidate guesses, computes the expected posterior entropy induced by each possible feedback pattern, and selects the guess that minimises this expected entropy. The entropy of a guess is computed as:
+
+H = −∑ p_i log₂(p_i)
+
+where p_i is the probability of observing feedback pattern i.
 
 While this policy is optimal under the modelling assumptions, it is computationally expensive, motivating the study of faster approximation methods.
 
