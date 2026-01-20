@@ -1,6 +1,8 @@
 import random
 import os
 import math
+import time
+start_time = time.time()
 
 def load_words(filename="valid-wordle-words.txt"):
     """
@@ -11,6 +13,7 @@ def load_words(filename="valid-wordle-words.txt"):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     filepath = os.path.join(base_dir, filename)
 
+    # Return list of words from file
     with open(filepath, "r") as f:
         words = [line.strip() for line in f]
     return words
@@ -64,12 +67,26 @@ def filter_words(possible_words, guess, feedback):
     # Initialise empty list of possible targets
     filtered = []
 
+    # Add words which match the given feedback to list
     for word in possible_words:
         if get_feedback(guess, word) == feedback:
             filtered.append(word)
 
     return filtered
     
+# Create dictionary storing the feedback produced by all necessary guess-target pairs
+feedback_cache = {}
+
+def cached_feedback(guess, target):
+    """
+    Takes guess word and target word as input, and returns the feedback produced, and 
+    adds it to global dictionary if not already there
+    """
+    key = (guess, target)
+    if key not in feedback_cache:
+        feedback_cache[key] = tuple(get_feedback(guess, target))
+    return feedback_cache[key]
+
 
 def choose_guess_uniform(possible_words, all_words):
     """
@@ -87,6 +104,7 @@ def choose_guess_entropy(possible_words, all_words):
     if len(possible_words) == 1:
         return possible_words[0]
 
+    # Initialise optimal guess and optimal entropy
     best_guess = None
     best_entropy = -float("inf")
 
@@ -94,7 +112,7 @@ def choose_guess_entropy(possible_words, all_words):
         feedback_counts = {}
 
         for target in possible_words:
-            fb = tuple(get_feedback(guess, target))
+            fb = cached_feedback(guess, target)
             feedback_counts[fb] = feedback_counts.get(fb, 0) + 1
 
         entropy = 0
@@ -126,7 +144,7 @@ def choose_guess_entropy_hard(possible_words, all_words):
         feedback_counts = {}
 
         for target in possible_words:
-            fb = tuple(get_feedback(guess, target))
+            fb = cached_feedback(guess, target)
             feedback_counts[fb] = feedback_counts.get(fb, 0) + 1
 
         entropy = 0
@@ -141,7 +159,6 @@ def choose_guess_entropy_hard(possible_words, all_words):
             best_guess = guess
 
     return best_guess
-
 
 def run_game(strategy, num_words):
     # Initialise list of valid words, random target, list of possible
@@ -175,9 +192,10 @@ def run_game(strategy, num_words):
     print(f"Failed. Target was {target}")
 
 def main():
-    run_game(choose_guess_uniform, 100)
+    run_game(choose_guess_entropy, 1500)
 
 
 if __name__ == "__main__":
     main()
 
+print(f"Time: {time.time() - start_time}")
