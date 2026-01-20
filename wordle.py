@@ -70,28 +70,100 @@ def filter_words(possible_words, guess, feedback):
 
     return filtered
     
-# Strategy 1: uniformly select guess from list of possible targets
-def choose_guess_uniform(possible_words):
+
+def choose_guess_uniform(possible_words, all_words):
+    """
+    Uniformly choose guess from list of possible target words
+    """
     return random.choice(possible_words)
 
-# Strategy 2: select guess that minimises entropy
+
+def choose_guess_entropy(possible_words, all_words):
+    """
+    Choose guess that maximises expected entropy of remaining candidates.
+    """
+
+    # If there is only one possible word remaining, choose that word as guess
+    if len(possible_words) == 1:
+        return possible_words[0]
+
+    best_guess = None
+    best_entropy = -float("inf")
+
+    for guess in all_words:
+        feedback_counts = {}
+
+        for target in possible_words:
+            fb = tuple(get_feedback(guess, target))
+            feedback_counts[fb] = feedback_counts.get(fb, 0) + 1
+
+        entropy = 0
+        total = len(possible_words)
+        for count in feedback_counts.values():
+            p = count / total
+            entropy -= p * math.log2(p)
+         
+        if entropy > best_entropy:
+            best_entropy = entropy
+            best_guess = guess
+
+    return best_guess
+
+def choose_guess_entropy_hard(possible_words, all_words):
+    """
+    Choose guess that maximises expected entropy of remaining candidates.
+    """
+
+    # If there is only one possible word remaining, choose that word as guess
+    if len(possible_words) == 1:
+        return possible_words[0]
+
+    best_guess = None
+    best_entropy = -1
+
+    
+    for guess in possible_words:
+        feedback_counts = {}
+
+        for target in possible_words:
+            fb = tuple(get_feedback(guess, target))
+            feedback_counts[fb] = feedback_counts.get(fb, 0) + 1
+
+        entropy = 0
+        total = len(possible_words)
+        for count in feedback_counts.values():
+            p = count / total
+            entropy -= p * math.log2(p)
+         
+
+        if entropy > best_entropy:
+            best_entropy = entropy
+            best_guess = guess
+
+    return best_guess
 
 
-def main():
+def run_game(strategy, num_words):
     # Initialise list of valid words, random target, list of possible
     # targets, and empty list of lists to store history
-    all_words = load_words()
+    start_words = load_words()
+    all_words = []
+    for i in range(num_words):
+        word = random.choice(start_words)
+        all_words.append(word)
+        start_words.remove(word)
+
     target = random.choice(all_words)
 
     possible_words = all_words.copy()
-    history = []
+    history = {}
 
     max_guesses = 20
     for turn in range(1, max_guesses + 1):
-        guess = choose_guess_uniform(possible_words)
+        guess = strategy(possible_words, all_words)
         feedback = get_feedback(guess, target)
 
-        history.append([guess, feedback])
+        history[guess] = feedback
         possible_words = filter_words(possible_words, guess, feedback)
 
         print(f"Turn {turn}: {guess} → {feedback}")
@@ -102,6 +174,10 @@ def main():
 
     print(f"Failed. Target was {target}")
 
+def main():
+    run_game(choose_guess_uniform, 100)
+
 
 if __name__ == "__main__":
     main()
+
